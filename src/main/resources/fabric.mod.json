@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "elestialjumpscare",
+  "version": "${version}",
+  "name": "Elestial Jumpscare Mod",
+  "description": "Mod jumpscare player Minecraft 1.20.1 dengan asset gambar dan suara custom yang dapat di-input langsung di folder game, serta mendukung Chat Prefix (!jumpscare <player> <id>) dan command /jumpscare.",
+  "authors": [
+    "Elestial Team"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.elestial.jumpscare.JumpscareMod"
+    ],
+    "client": [
+      "com.elestial.jumpscare.JumpscareClient"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.14.24",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}

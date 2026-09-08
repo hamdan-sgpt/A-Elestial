@@ -1,0 +1,22 @@
+{
+  "heartbeat": {
+    "category": "player",
+    "subtitle": "subtitles.elestialjumpscare.heartbeat",
+    "sounds": [
+      {
+        "name": "elestialjumpscare:heartbeat",
+        "stream": false
+      }
+    ]
+  },
+  "fakestep": {
+    "category": "player",
+    "subtitle": "subtitles.elestialjumpscare.fakestep",
+    "sounds": [
+      {
+        "name": "elestialjumpscare:fakestep",
+        "stream": false
+      }
+    ]
+  }
+}
