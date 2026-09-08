@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+build/
+bin/
+out/
+
+# Forge Run Client & Server Workspaces
+run/
+run2/
+run3/
+run4/
+run5/
+
+# IDE Configuration
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+
+# Operating System & Temporary Files
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
+*.tmp
+Join
