@@ -34,6 +34,47 @@ Ketik perintah berikut di chat:
 
 ---
 
+## 👻 Command Team "Ghost"
+
+Fitur untuk memasukkan atau mengeluarkan player dari team scoreboard `"Ghost"`:
+
+### 1. Via Command Brigadier
+- `/ghost <nama_player>` *(contoh: `/ghost Steve` atau `/ghost @a`)*: Masukkan player ke team Ghost.
+- `/ghost`: Masukkan diri sendiri ke team Ghost.
+- `/ghost add <nama_player>`: Masukkan player ke team Ghost.
+- `/ghost remove <nama_player>`: Keluarkan player dari team Ghost.
+- `/ghost leave`: Keluar dari team Ghost.
+- `/ghost list`: Lihat daftar semua pemain di team Ghost.
+- `/ghost clear`: Kosongkan seluruh anggota team Ghost.
+- `/unghost <nama_player>`: Alias cepat mengeluarkan player dari team Ghost.
+
+### 2. Via Chat Prefix
+- `!ghost <nama_player>` atau `#ghost <nama_player>` atau `/ghost <nama_player>`
+- `!unghost <nama_player>` atau `#unghost <nama_player>` atau `/unghost <nama_player>`
+
+### 3. Via Menu In-Game (`J`)
+- Buka menu dengan tombol **`J`**, pilih tab **`[ KONTROL ]`**.
+- Pilih pemain target, lalu klik tombol **`👻 + Team Ghost`** atau **`❌ - Team Ghost`**.
+
+### 4. ⚔️ Mekanik Pasif: Ghost Attack → Jumpscare
+- Setiap player yang berada di **team Ghost** jika memukul/menyerang player lain **di luar team Ghost** (korban), korban akan **otomatis langsung terkena efek Jumpscare** (gambar + audio mengagetkan).
+- **Pilihan Jumpscare Khusus Ghost:**
+  - Setiap Ghost bisa memilih jumpscare mana yang keluar saat memukul!
+  - **Via Menu GUI (`J`)**: Pilih ID jumpscare yang diinginkan di Tab Visual, lalu klik **`[ 👻 Serangan Ghost: <id> ]`** atau klik **`[ 🎲 Random ]`**.
+  - **Via Command**: `/ghost select <id>` *(contoh: `/ghost select kunti`)* atau `/ghost select random`.
+  - **Cek Jumpscare Aktif**: `/ghost select` (tanpa argumen).
+  - **Via Chat Prefix**: `!ghost select <id>` atau `!ghost set <id>`.
+- **Anti-Spam Cooldown:** Diberi cooldown ~2.5 detik per korban agar tidak tumpang tindih bila dipukul bertubi-tubi.
+- **Sesama Ghost:** Jika sesama player di team Ghost saling pukul, jumpscare **tidak** akan aktif.
+
+### 5. 🛡️ Mekanik Eliminasi: Non-Ghost Serang Ghost → Auto /gmsp (Spectator)
+- Jika player biasa (**di luar team Ghost**) menyerang player yang berada di **team Ghost**:
+  - Player Ghost yang terkena serangan tersebut **otomatis langsung diubah mode permainannya menjadi Spectator (`/gmsp`)** seolah-olah hantunya berhasil tertangkap/tereliminasi.
+  - Serangan fisik dibatalkan sehingga Ghost tidak mati/drop inventory ke tanah.
+  - Server otomatis mengirimkan notifikasi chat ke penyerang, korban, dan broadcast ke seluruh player server!
+
+---
+
 ## 👥 Pengujian Multi-Player (Multi-Client Test)
 
 Untuk mengetes jumpscare, audio 3D, atau possession ke banyak player sekaligus di satu PC:

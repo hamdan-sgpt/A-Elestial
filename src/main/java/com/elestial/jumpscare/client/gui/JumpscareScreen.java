@@ -30,10 +30,11 @@ public class JumpscareScreen extends Screen {
 
     private static final Map<String, String> assignments = new LinkedHashMap<>();
 
-    // Selected choices
-    private String selectedPlayer = "";
-    private String selectedJumpscareId = "spooky";
-    private String selectedControlAction = "spin";
+    // Selected choices (persisted across menu open/close)
+    private static String selectedPlayer = "";
+    public static String selectedJumpscareId = "spooky";
+    public static String activeGhostAttackId = "spooky";
+    private static String selectedControlAction = "spin";
 
     // Pagination states
     private int playerPage = 0;
@@ -680,6 +681,38 @@ public class JumpscareScreen extends Screen {
                 this.statusColor = 0xFF5555;
             }
         }, ButtonStyle.DANGER, false));
+
+        // Ghost Attack Jumpscare Selection Row
+        int ghostAtkY = actionY + 18;
+        String curGhostId = this.jumpscareIdBox != null ? this.jumpscareIdBox.getValue().trim() : selectedJumpscareId;
+        if (curGhostId.isEmpty()) curGhostId = activeGhostAttackId;
+        final String targetGhostId = curGhostId;
+        int btnW1 = (int) (contentWidth * 0.74);
+        int btnW2 = contentWidth - btnW1 - 4;
+
+        boolean isAlreadyActive = targetGhostId.equalsIgnoreCase(activeGhostAttackId);
+        String label = isAlreadyActive
+            ? "§a✔ Serangan Ghost Aktif: §f" + activeGhostAttackId
+            : "§e⚡ Pasang Serangan Ghost: §f" + targetGhostId + " §7(Aktif: " + activeGhostAttackId + ")";
+
+        this.addRenderableWidget(createStyledButton(contentLeft, ghostAtkY, btnW1, 15, Component.literal(label), btn -> {
+            activeGhostAttackId = targetGhostId;
+            selectedJumpscareId = targetGhostId;
+            JumpscareNetworking.sendSetGhostAttackPacket(targetGhostId);
+            this.statusMessage = "§a Serangan Ghost diatur: " + targetGhostId;
+            this.statusColor = 0x55FF55;
+            this.init();
+        }, isAlreadyActive ? ButtonStyle.CHIP : ButtonStyle.DEFAULT, isAlreadyActive));
+
+        boolean isRandomActive = "random".equalsIgnoreCase(activeGhostAttackId);
+        String randomLabel = isRandomActive ? "§a✔ 🎲 Random" : "§8🎲 Random";
+        this.addRenderableWidget(createStyledButton(contentLeft + btnW1 + 4, ghostAtkY, btnW2, 15, Component.literal(randomLabel), btn -> {
+            activeGhostAttackId = "random";
+            JumpscareNetworking.sendSetGhostAttackPacket("random");
+            this.statusMessage = "§a Serangan Ghost diatur: RANDOM";
+            this.statusColor = 0x55FF55;
+            this.init();
+        }, ButtonStyle.DEFAULT, isRandomActive));
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -1125,6 +1158,41 @@ public class JumpscareScreen extends Screen {
                 }
             }
         }, ButtonStyle.PRIMARY, false));
+
+        // Ghost Team Buttons
+        int ghostRowY = actionY + 19;
+        int gBtnW = (contentWidth - 4) / 2;
+        this.addRenderableWidget(createStyledButton(contentLeft, ghostRowY, gBtnW, 15, Component.literal("§7👻 + Team Ghost"), btn -> {
+            String target = this.targetPlayerBox != null ? this.targetPlayerBox.getValue().trim() : selectedPlayer;
+            if (target.isEmpty()) target = selectedPlayer;
+            if (target.isEmpty() && this.minecraft != null && this.minecraft.player != null) {
+                target = this.minecraft.player.getScoreboardName();
+            }
+            if (target.isEmpty()) {
+                this.statusMessage = "§c Masukkan nama player!";
+                this.statusColor = 0xFF5555;
+            } else {
+                JumpscareNetworking.sendGhostTeamPacket(target, "add");
+                this.statusMessage = "§a Masuk Ghost: " + target;
+                this.statusColor = 0x55FF55;
+            }
+        }, ButtonStyle.CHIP, false));
+
+        this.addRenderableWidget(createStyledButton(contentLeft + gBtnW + 4, ghostRowY, contentWidth - gBtnW - 4, 15, Component.literal("§8❌ - Team Ghost"), btn -> {
+            String target = this.targetPlayerBox != null ? this.targetPlayerBox.getValue().trim() : selectedPlayer;
+            if (target.isEmpty()) target = selectedPlayer;
+            if (target.isEmpty() && this.minecraft != null && this.minecraft.player != null) {
+                target = this.minecraft.player.getScoreboardName();
+            }
+            if (target.isEmpty()) {
+                this.statusMessage = "§c Masukkan nama player!";
+                this.statusColor = 0xFF5555;
+            } else {
+                JumpscareNetworking.sendGhostTeamPacket(target, "remove");
+                this.statusMessage = "§e Keluar Ghost: " + target;
+                this.statusColor = 0xFFFF55;
+            }
+        }, ButtonStyle.DEFAULT, false));
     }
 
     // ═══════════════════════════════════════════════════════════

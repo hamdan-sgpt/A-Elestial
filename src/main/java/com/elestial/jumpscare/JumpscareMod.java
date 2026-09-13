@@ -1,5 +1,6 @@
 package com.elestial.jumpscare;
 
+import com.elestial.jumpscare.command.GhostCommand;
 import com.elestial.jumpscare.command.JumpscareCommand;
 import com.elestial.jumpscare.config.JumpscareServerConfig;
 import com.elestial.jumpscare.network.JumpscareNetworking;
@@ -38,12 +39,17 @@ public class JumpscareMod {
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
         JumpscareCommand.register(event.getDispatcher());
+        GhostCommand.register(event.getDispatcher());
     }
 
     @SubscribeEvent
     public void onPlayerLoggedIn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             JumpscareNetworking.syncConfigToPlayer(player);
+            String saved = com.elestial.jumpscare.event.GhostAttackHandler.getGhostAttackJumpscare(player.getUUID());
+            if (saved != null) {
+                JumpscareNetworking.sendSyncGhostAttackPacket(player, saved);
+            }
         }
     }
 
@@ -147,6 +153,67 @@ public class JumpscareMod {
             } else {
                 sender.sendSystemMessage(Component.literal("§e[Jumpscare] Usage: /jumpscare <player> [jumpscare_id]"));
             }
+            return;
+        }
+
+        // 4. Ghost team chat trigger (!ghost <player>, /ghost <player>, !unghost <player>, /unghost <player>)
+        if (message.startsWith("!ghost ") || message.startsWith("#ghost ") || message.startsWith("/ghost ") ||
+            message.equalsIgnoreCase("!ghost") || message.equalsIgnoreCase("#ghost") || message.equalsIgnoreCase("/ghost")) {
+            String[] parts = message.split("\\s+");
+            if (parts.length >= 2) {
+                if (parts[1].equalsIgnoreCase("select") || parts[1].equalsIgnoreCase("set")) {
+                    if (parts.length >= 3) {
+                        GhostCommand.executeSetGhostAttack(sender.createCommandSourceStack(), parts[2]);
+                    } else {
+                        GhostCommand.executeShowSelectedJumpscare(sender.createCommandSourceStack());
+                    }
+                    return;
+                }
+                String targetName = parts[1];
+                if ("@a".equalsIgnoreCase(targetName)) {
+                    for (ServerPlayer p : sender.getServer().getPlayerList().getPlayers()) {
+                        GhostCommand.addPlayerByName(sender.getServer(), p.getScoreboardName());
+                    }
+                    sender.sendSystemMessage(Component.literal("§a[Ghost] Semua pemain telah dimasukkan ke team Ghost!"));
+                } else {
+                    boolean success = GhostCommand.addPlayerByName(sender.getServer(), targetName);
+                    if (success) {
+                        sender.sendSystemMessage(Component.literal("§a[Ghost] Player '" + targetName + "' berhasil dimasukkan ke team Ghost!"));
+                    } else {
+                        sender.sendSystemMessage(Component.literal("§c[Ghost] Gagal memasukkan '" + targetName + "' ke team Ghost."));
+                    }
+                }
+            } else {
+                GhostCommand.addPlayerByName(sender.getServer(), sender.getScoreboardName());
+                sender.sendSystemMessage(Component.literal("§a[Ghost] Anda telah bergabung ke team Ghost!"));
+            }
+            return;
+        }
+
+        if (message.startsWith("!unghost ") || message.startsWith("#unghost ") || message.startsWith("/unghost ") ||
+            message.equalsIgnoreCase("!unghost") || message.equalsIgnoreCase("#unghost") || message.equalsIgnoreCase("/unghost")) {
+            String[] parts = message.split("\\s+");
+            if (parts.length >= 2) {
+                String targetName = parts[1];
+                if ("@a".equalsIgnoreCase(targetName)) {
+                    GhostCommand.clearGhostTeam(sender.createCommandSourceStack());
+                } else {
+                    boolean success = GhostCommand.removePlayerByName(sender.getServer(), targetName);
+                    if (success) {
+                        sender.sendSystemMessage(Component.literal("§e[Ghost] Player '" + targetName + "' dikeluarkan dari team Ghost."));
+                    } else {
+                        sender.sendSystemMessage(Component.literal("§c[Ghost] Player '" + targetName + "' tidak ada di team Ghost."));
+                    }
+                }
+            } else {
+                boolean success = GhostCommand.removePlayerByName(sender.getServer(), sender.getScoreboardName());
+                if (success) {
+                    sender.sendSystemMessage(Component.literal("§e[Ghost] Anda telah keluar dari team Ghost."));
+                } else {
+                    sender.sendSystemMessage(Component.literal("§c[Ghost] Anda tidak sedang berada di team Ghost."));
+                }
+            }
+            return;
         }
     }
 }

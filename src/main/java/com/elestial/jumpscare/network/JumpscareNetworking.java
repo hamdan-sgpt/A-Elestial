@@ -118,6 +118,37 @@ public class JumpscareNetworking {
             .decoder(TriggerAudioC2SPacket::decode)
             .consumerMainThread(TriggerAudioC2SPacket::handle)
             .add();
+
+        CHANNEL.messageBuilder(GhostTeamC2SPacket.class, packetId++)
+            .encoder(GhostTeamC2SPacket::encode)
+            .decoder(GhostTeamC2SPacket::decode)
+            .consumerMainThread(GhostTeamC2SPacket::handle)
+            .add();
+
+        CHANNEL.messageBuilder(SetGhostAttackC2SPacket.class, packetId++)
+            .encoder(SetGhostAttackC2SPacket::encode)
+            .decoder(SetGhostAttackC2SPacket::decode)
+            .consumerMainThread(SetGhostAttackC2SPacket::handle)
+            .add();
+
+        CHANNEL.messageBuilder(SyncGhostAttackS2CPacket.class, packetId++)
+            .encoder(SyncGhostAttackS2CPacket::encode)
+            .decoder(SyncGhostAttackS2CPacket::decode)
+            .consumerMainThread(SyncGhostAttackS2CPacket::handle)
+            .add();
+    }
+
+    public static void sendGhostTeamPacket(String targetName, String action) {
+        CHANNEL.sendToServer(new GhostTeamC2SPacket(targetName, action));
+    }
+
+    public static void sendSetGhostAttackPacket(String jumpscareId) {
+        CHANNEL.sendToServer(new SetGhostAttackC2SPacket(jumpscareId));
+    }
+
+    public static void sendSyncGhostAttackPacket(ServerPlayer player, String jumpscareId) {
+        if (player == null) return;
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SyncGhostAttackS2CPacket(jumpscareId));
     }
 
     public static boolean sendAudioScarePacket(ServerPlayer targetPlayer, String soundId, String soundUrl, float volume, float pitch, boolean behindPlayer) {
@@ -829,6 +860,130 @@ public class JumpscareNetworking {
                         }
                     }
                 }
+            });
+            ctx.setPacketHandled(true);
+        }
+    }
+
+    public static class GhostTeamC2SPacket {
+        private final String targetName;
+        private final String action;
+
+        public GhostTeamC2SPacket(String targetName, String action) {
+            this.targetName = targetName != null ? targetName : "";
+            this.action = action != null ? action : "add";
+        }
+
+        public static void encode(GhostTeamC2SPacket pkt, FriendlyByteBuf buf) {
+            buf.writeUtf(pkt.targetName, 64);
+            buf.writeUtf(pkt.action, 32);
+        }
+
+        public static GhostTeamC2SPacket decode(FriendlyByteBuf buf) {
+            return new GhostTeamC2SPacket(buf.readUtf(64), buf.readUtf(32));
+        }
+
+        public static void handle(GhostTeamC2SPacket pkt, Supplier<NetworkEvent.Context> ctxGetter) {
+            NetworkEvent.Context ctx = ctxGetter.get();
+            ctx.enqueueWork(() -> {
+                ServerPlayer sender = ctx.getSender();
+                if (sender != null && sender.getServer() != null) {
+                    String target = pkt.targetName.trim();
+                    if (target.isEmpty()) {
+                        target = sender.getScoreboardName();
+                    }
+                    String act = pkt.action.toLowerCase();
+                    if ("remove".equals(act)) {
+                        boolean ok = com.elestial.jumpscare.command.GhostCommand.removePlayerByName(sender.getServer(), target);
+                        if (ok) {
+                            sender.sendSystemMessage(Component.literal("§e[Ghost] Player '" + target + "' dikeluarkan dari team Ghost."));
+                        } else {
+                            sender.sendSystemMessage(Component.literal("§c[Ghost] Player '" + target + "' tidak ada di team Ghost."));
+                        }
+                    } else if ("toggle".equals(act)) {
+                        net.minecraft.world.scores.PlayerTeam team = sender.getServer().getScoreboard().getPlayerTeam(com.elestial.jumpscare.command.GhostCommand.GHOST_TEAM_NAME);
+                        boolean isMember = (team != null && team.getPlayers().contains(target));
+                        if (isMember) {
+                            com.elestial.jumpscare.command.GhostCommand.removePlayerByName(sender.getServer(), target);
+                            sender.sendSystemMessage(Component.literal("§e[Ghost] Player '" + target + "' dikeluarkan dari team Ghost."));
+                        } else {
+                            com.elestial.jumpscare.command.GhostCommand.addPlayerByName(sender.getServer(), target);
+                            sender.sendSystemMessage(Component.literal("§a[Ghost] Player '" + target + "' dimasukkan ke team Ghost!"));
+                        }
+                    } else { // default "add"
+                        if ("@a".equalsIgnoreCase(target)) {
+                            for (ServerPlayer p : sender.getServer().getPlayerList().getPlayers()) {
+                                com.elestial.jumpscare.command.GhostCommand.addPlayerByName(sender.getServer(), p.getScoreboardName());
+                            }
+                            sender.sendSystemMessage(Component.literal("§a[Ghost] Semua pemain telah dimasukkan ke team Ghost!"));
+                        } else {
+                            boolean ok = com.elestial.jumpscare.command.GhostCommand.addPlayerByName(sender.getServer(), target);
+                            if (ok) {
+                                sender.sendSystemMessage(Component.literal("§a[Ghost] Player '" + target + "' berhasil dimasukkan ke team Ghost!"));
+                            } else {
+                                sender.sendSystemMessage(Component.literal("§c[Ghost] Gagal memasukkan '" + target + "' ke team Ghost."));
+                            }
+                        }
+                    }
+                }
+            });
+            ctx.setPacketHandled(true);
+        }
+    }
+
+    public static class SetGhostAttackC2SPacket {
+        private final String jumpscareId;
+
+        public SetGhostAttackC2SPacket(String jumpscareId) {
+            this.jumpscareId = jumpscareId != null ? jumpscareId : "random";
+        }
+
+        public static void encode(SetGhostAttackC2SPacket pkt, FriendlyByteBuf buf) {
+            buf.writeUtf(pkt.jumpscareId, 64);
+        }
+
+        public static SetGhostAttackC2SPacket decode(FriendlyByteBuf buf) {
+            return new SetGhostAttackC2SPacket(buf.readUtf(64));
+        }
+
+        public static void handle(SetGhostAttackC2SPacket pkt, Supplier<NetworkEvent.Context> ctxGetter) {
+            NetworkEvent.Context ctx = ctxGetter.get();
+            ctx.enqueueWork(() -> {
+                ServerPlayer sender = ctx.getSender();
+                if (sender != null) {
+                    String id = pkt.jumpscareId.trim().toLowerCase();
+                    com.elestial.jumpscare.event.GhostAttackHandler.setGhostAttackJumpscare(sender.getUUID(), id);
+                    sender.sendSystemMessage(Component.literal("§a[Ghost] Jumpscare serangan Anda diatur ke: §e" + id + "§a!"));
+                }
+            });
+            ctx.setPacketHandled(true);
+        }
+    }
+
+    public static class SyncGhostAttackS2CPacket {
+        private final String jumpscareId;
+
+        public SyncGhostAttackS2CPacket(String jumpscareId) {
+            this.jumpscareId = jumpscareId != null ? jumpscareId : "random";
+        }
+
+        public static void encode(SyncGhostAttackS2CPacket pkt, FriendlyByteBuf buf) {
+            buf.writeUtf(pkt.jumpscareId, 64);
+        }
+
+        public static SyncGhostAttackS2CPacket decode(FriendlyByteBuf buf) {
+            return new SyncGhostAttackS2CPacket(buf.readUtf(64));
+        }
+
+        public static void handle(SyncGhostAttackS2CPacket pkt, Supplier<NetworkEvent.Context> ctxGetter) {
+            NetworkEvent.Context ctx = ctxGetter.get();
+            ctx.enqueueWork(() -> {
+                DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+                    com.elestial.jumpscare.client.gui.JumpscareScreen.activeGhostAttackId = pkt.jumpscareId;
+                    if (!pkt.jumpscareId.equalsIgnoreCase("random")) {
+                        com.elestial.jumpscare.client.gui.JumpscareScreen.selectedJumpscareId = pkt.jumpscareId;
+                    }
+                });
             });
             ctx.setPacketHandled(true);
         }

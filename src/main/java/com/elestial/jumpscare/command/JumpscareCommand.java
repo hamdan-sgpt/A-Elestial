@@ -129,6 +129,16 @@ public class JumpscareCommand {
             .then(Commands.literal("list")
                 .executes(ctx -> executeList(ctx.getSource()))
             )
+            .then(Commands.literal("ghost")
+                .then(Commands.argument("targets", EntityArgument.players())
+                    .executes(ctx -> GhostCommand.addPlayersToGhost(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets")))
+                )
+            )
+            .then(Commands.literal("unghost")
+                .then(Commands.argument("targets", EntityArgument.players())
+                    .executes(ctx -> GhostCommand.removePlayersFromGhost(ctx.getSource(), EntityArgument.getPlayers(ctx, "targets")))
+                )
+            )
         );
 
         dispatcher.register(Commands.literal("scare")
